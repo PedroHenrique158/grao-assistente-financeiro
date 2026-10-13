@@ -25,7 +25,7 @@ function Reset() {
   async function submit(e: FormEvent) {
     e.preventDefault();
     const { error } = await supabase.auth.updateUser({ password: pw });
-    if (error) return toast.error("O link pode ter expirado. Peça um novo.");
+    if (error) { toast.error("O link pode ter expirado. Peça um novo."); return; }
     toast.success("Senha alterada!");
     navigate({ to: "/chat" });
   }
