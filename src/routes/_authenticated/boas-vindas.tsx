@@ -19,7 +19,7 @@ function Welcome() {
   const { user } = Route.useRouteContext();
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
-  const [name, setName] = useState((user.user_metadata?.display_name as string) ?? (user.user_metadata?.full_name as string) ?? "");
+  const [name, setName] = useState((user.user_metadata?.['display_name'] as string) ?? (user.user_metadata?.['full_name'] as string) ?? "");
   const [goal, setGoal] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -29,7 +29,7 @@ function Welcome() {
       .from("profiles")
       .upsert({ id: user.id, display_name: name.trim() || null, main_goal: goal || null, onboarded: true });
     setSaving(false);
-    if (error) return toast.error("Não foi possível salvar. Tente de novo.");
+    if (error) { toast.error("Não foi possível salvar. Tente de novo."); return; }
     navigate({ to: "/chat" });
   }
 

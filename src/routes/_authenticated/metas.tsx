@@ -30,9 +30,9 @@ function Goals() {
   async function create(e: FormEvent) {
     e.preventDefault();
     const target = Number(form.target.replace(/\./g, "").replace(",", "."));
-    if (!form.name.trim() || !(target > 0)) return toast.error("Dê um nome e um valor para a meta.");
+    if (!form.name.trim() || !(target > 0)) { toast.error("Dê um nome e um valor para a meta."); return; }
     const { error } = await supabase.from("goals").insert({ user_id: user.id, name: form.name.trim(), target_amount: target, deadline: form.deadline || null });
-    if (error) return toast.error("Não foi possível criar a meta.");
+    if (error) { toast.error("Não foi possível criar a meta."); return; }
     toast.success("Meta criada!");
     setForm({ name: "", target: "", deadline: "" });
     setOpen(false);
@@ -86,7 +86,7 @@ function GoalCard({ goal, onChange }: { goal: Goal; onChange: () => void }) {
     const v = Number(amount.replace(",", "."));
     if (!(v > 0)) return;
     const { error } = await supabase.from("goals").update({ saved_amount: goal.saved_amount + v }).eq("id", goal.id);
-    if (error) return toast.error("Não foi possível guardar.");
+    if (error) { toast.error("Não foi possível guardar."); return; }
     toast.success(`${formatBRL(v)} guardado em ${goal.name}.`);
     setAmount("");
     onChange();
@@ -94,7 +94,7 @@ function GoalCard({ goal, onChange }: { goal: Goal; onChange: () => void }) {
   async function remove() {
     if (!confirm(`Apagar a meta "${goal.name}"?`)) return;
     const { error } = await supabase.from("goals").delete().eq("id", goal.id);
-    if (error) return toast.error("Não foi possível apagar.");
+    if (error) { toast.error("Não foi possível apagar."); return; }
     onChange();
   }
   return (

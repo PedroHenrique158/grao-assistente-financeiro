@@ -44,7 +44,7 @@ export function todayBR(now = new Date()) {
 export const monthKey = (iso: string) => iso.slice(0, 7);
 
 export function previousMonthKey(key: string) {
-  const [y, m] = key.split("-").map(Number);
+  const [y = 0, m = 1] = key.split("-").map(Number);
   const d = new Date(Date.UTC(y, m - 2, 1));
   return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
 }

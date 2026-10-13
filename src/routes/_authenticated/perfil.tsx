@@ -35,7 +35,7 @@ function Profile() {
   async function save(e: FormEvent) {
     e.preventDefault();
     const { error } = await supabase.from("profiles").update({ display_name: name, main_goal: goal }).eq("id", user.id);
-    if (error) return toast.error("Não foi possível salvar.");
+    if (error) { toast.error("Não foi possível salvar."); return; }
     toast.success("Dados salvos.");
     qc.invalidateQueries({ queryKey: ["profile", user.id] });
   }
@@ -46,16 +46,16 @@ function Profile() {
   }
   async function changePassword(e: FormEvent) {
     e.preventDefault();
-    if (pw.next.length < 8) return toast.error("A nova senha precisa ter pelo menos 8 caracteres.");
+    if (pw.next.length < 8) { toast.error("A nova senha precisa ter pelo menos 8 caracteres."); return; }
     const { error } = await supabase.auth.updateUser({ password: pw.next, current_password: pw.current } as never);
-    if (error) return toast.error("Não foi possível trocar a senha. Confira a senha atual.");
+    if (error) { toast.error("Não foi possível trocar a senha. Confira a senha atual."); return; }
     toast.success("Senha alterada.");
     setPw({ current: "", next: "" });
   }
   async function clearChat() {
     if (!confirm("Apagar todo o histórico da conversa? Seus lançamentos continuam salvos.")) return;
     const { error } = await supabase.from("chat_messages").delete().eq("user_id", user.id);
-    if (error) return toast.error("Não foi possível apagar.");
+    if (error) { toast.error("Não foi possível apagar."); return; }
     qc.removeQueries({ queryKey: ["chat-history"] });
     toast.success("Histórico apagado.");
   }

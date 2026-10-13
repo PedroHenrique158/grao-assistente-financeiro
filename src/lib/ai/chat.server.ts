@@ -4,7 +4,7 @@ import { convertToModelMessages, stepCountIs, streamText, tool, type UIMessage }
 import { z } from "zod/v4";
 
 import type { Database } from "@/integrations/supabase/types";
-import { CATEGORIES, formatBRL, monthSummary, todayBR, type Transaction } from "@/lib/finance";
+import { CATEGORIES, formatBRL, monthSummary, previousMonthKey, todayBR, type Transaction } from "@/lib/finance";
 import {
   createLovableAiGatewayRunIdFetch,
   getLovableAiGatewayRunId,
@@ -70,7 +70,7 @@ export async function handleChat(request: Request): Promise<Response> {
   if (!messages.length) return json(400, "Mensagem vazia.");
 
   // Persist the newest user message.
-  const last = messages[messages.length - 1];
+  const last = messages[messages.length - 1]!;
   if (last.role === "user") {
     const { error } = await supabase
       .from("chat_messages")
@@ -161,8 +161,7 @@ export async function handleChat(request: Request): Promise<Response> {
         if (error) return { ok: false, erro: error.message };
         const txs = (data ?? []).map((t) => ({ ...t, amount: Number(t.amount) })) as Transaction[];
         const key = todayBR().slice(0, 7);
-        const [y, m] = key.split("-").map(Number);
-        const prevKey = `${m === 1 ? y - 1 : y}-${String(m === 1 ? 12 : m - 1).padStart(2, "0")}`;
+        const prevKey = previousMonthKey(key);
         return { ok: true, mesAtual: monthSummary(txs, key), mesAnterior: monthSummary(txs, prevKey) };
       },
     }),

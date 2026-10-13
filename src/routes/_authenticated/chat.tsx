@@ -45,7 +45,7 @@ type ToolPart = { type: string; state?: string; input?: Record<string, unknown>;
 function ToolNote({ part }: { part: ToolPart }) {
   const name = part.type.replace("tool-", "");
   if (part.state !== "output-available") return <Shimmer className="text-sm">Anotando…</Shimmer>;
-  if (part.output && part.output.ok === false) return <p className="text-sm text-destructive">Não consegui concluir essa ação.</p>;
+  if (part.output && part.output['ok'] === false) return <p className="text-sm text-destructive">Não consegui concluir essa ação.</p>;
   if (name === "registrar_transacao" && part.input) {
     const i = part.input as { tipo: string; valor: number; categoria: string; descricao: string };
     return (

@@ -36,13 +36,13 @@ function Dashboard() {
   const tips = buildInsights(list, key);
 
   const months: string[] = [key];
-  for (let i = 0; i < 5; i++) months.unshift(previousMonthKey(months[0]));
+  for (let i = 0; i < 5; i++) months.unshift(previousMonthKey(months[0]!));
   const chart = months.map((m) => ({ mes: MONTHS[Number(m.slice(5)) - 1], gastos: monthSummary(list, m).expense }));
 
   async function remove(t: Transaction) {
     if (!confirm(`Apagar "${t.description || t.category}" de ${formatBRL(t.amount)}?`)) return;
     const { error } = await supabase.from("transactions").delete().eq("id", t.id);
-    if (error) return toast.error("Não foi possível apagar.");
+    if (error) { toast.error("Não foi possível apagar."); return; }
     toast.success("Lançamento apagado.");
     qc.invalidateQueries({ queryKey: ["transactions"] });
   }
@@ -160,12 +160,12 @@ function EditTx({ tx, onClose }: { tx: Transaction; onClose: () => void }) {
   const [f, setF] = useState({ ...tx, amount: String(tx.amount) });
   async function save() {
     const amount = Number(f.amount.replace(",", "."));
-    if (!(amount > 0)) return toast.error("Informe um valor maior que zero.");
+    if (!(amount > 0)) { toast.error("Informe um valor maior que zero."); return; }
     const { error } = await supabase
       .from("transactions")
       .update({ type: f.type, amount, category: f.category, description: f.description, occurred_on: f.occurred_on })
       .eq("id", tx.id);
-    if (error) return toast.error("Não foi possível salvar.");
+    if (error) { toast.error("Não foi possível salvar."); return; }
     toast.success("Lançamento corrigido.");
     qc.invalidateQueries({ queryKey: ["transactions"] });
     onClose();
