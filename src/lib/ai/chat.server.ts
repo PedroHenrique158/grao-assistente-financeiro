@@ -39,10 +39,11 @@ Hoje é ${todayBR()} (fuso de Brasília). Usuário: ${name ?? "sem nome"}. Objet
 
 Regras:
 - Fale português do Brasil simples, frases curtas, sem jargão. Se usar um termo financeiro, explique em poucas palavras.
-- Quando o usuário contar um gasto ou recebimento, chame registrar_transacao imediatamente. Identifique valor, tipo (receita/despesa), categoria e data ("hoje", "ontem", datas relativas → converta para AAAA-MM-DD). Sem data = hoje.
+- Quando o usuário contar um gasto ou recebimento, chame registrar_transacao imediatamente. Identifique valor, tipo (receita/despesa) e categoria. Só preencha "data" se o usuário disser explicitamente uma data ("ontem", "dia 3"); caso contrário envie data = null e o sistema usa hoje. Nunca invente datas passadas.
 - Categorias: ${CATEGORIES.join(", ")}. Mercado, almoço, delivery, restaurante → Alimentação. Uber, ônibus, gasolina → Transporte. Aluguel, luz, água, internet, condomínio → Moradia. Farmácia, consulta, plano de saúde → Saúde. Curso, livro, faculdade → Educação. Cinema, viagem, streaming, bar → Lazer. Salário, freela, pagamento recebido → Salário (receita). Outras receitas sem categoria clara → Outros.
 - Depois de registrar, confirme em uma frase, ex.: "Registrei uma despesa de R$ 45,00 na categoria Alimentação." Ofereça corrigir se algo estiver errado.
-- Se pedirem para corrigir ou apagar, use listar_transacoes para achar o lançamento e depois corrigir_transacao ou apagar_transacao.
+- Se logo após um registro o usuário pedir uma alteração (ex.: "corrige para R$ 50", "muda a categoria para Lazer", "na verdade foi ontem"), chame corrigir_ultimo_lancamento. NUNCA crie uma nova transação nesse caso.
+- Para corrigir ou apagar lançamentos mais antigos, use listar_transacoes para achar o lançamento e depois corrigir_transacao ou apagar_transacao.
 - Para perguntas sobre gastos, saldo ou dicas, use resumo_do_mes e dê no máximo 3 recomendações práticas e concretas com números.
 - Para metas use criar_meta, listar_metas e guardar_na_meta.
 - Se o valor não estiver claro, pergunte antes de registrar. Nunca invente valores.
@@ -96,16 +97,17 @@ export async function handleChat(request: Request): Promise<Response> {
         valor: z.number().describe("Valor em reais, positivo"),
         categoria: categoryEnum,
         descricao: z.string().describe("Descrição curta, ex.: Almoço"),
-        data: z.string().describe("AAAA-MM-DD"),
+        data: z.string().nullable().describe("AAAA-MM-DD somente se o usuário disse a data; senão null"),
       }),
       execute: async (i) => {
+        const occurred = i.data && /^\d{4}-\d{2}-\d{2}$/.test(i.data) ? i.data : todayBR();
         const { data, error } = await supabase
           .from("transactions")
-          .insert({ user_id: userId, type: i.tipo, amount: i.valor, category: i.categoria, description: i.descricao, occurred_on: i.data })
+          .insert({ user_id: userId, type: i.tipo, amount: i.valor, category: i.categoria, description: i.descricao, occurred_on: occurred })
           .select("id")
           .single();
         if (error) return { ok: false, erro: error.message };
-        return { ok: true, id: data.id, ...i };
+        return { ok: true, id: data.id, ...i, data: occurred };
       },
     }),
     listar_transacoes: tool({
@@ -140,6 +142,35 @@ export async function handleChat(request: Request): Promise<Response> {
         if (i.data) patch.occurred_on = i.data;
         const { error } = await supabase.from("transactions").update(patch).eq("id", i.id);
         return error ? { ok: false, erro: error.message } : { ok: true };
+      },
+    }),
+    corrigir_ultimo_lancamento: tool({
+      description: "Altera o último lançamento registrado (o mais recente). Envie null nos campos que não mudam.",
+      inputSchema: z.object({
+        tipo: z.enum(["receita", "despesa"]).nullable(),
+        valor: z.number().nullable(),
+        categoria: categoryEnum.nullable(),
+        descricao: z.string().nullable(),
+        data: z.string().nullable(),
+      }),
+      execute: async (i) => {
+        const { data: last, error: e1 } = await supabase
+          .from("transactions")
+          .select("id, type, amount, category, description, occurred_on")
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (e1 || !last) return { ok: false, erro: e1?.message ?? "Nenhum lançamento encontrado." };
+        const patch: Database["public"]["Tables"]["transactions"]["Update"] = {};
+        if (i.tipo) patch.type = i.tipo;
+        if (i.valor) patch.amount = i.valor;
+        if (i.categoria) patch.category = i.categoria;
+        if (i.descricao) patch.description = i.descricao;
+        if (i.data) patch.occurred_on = i.data;
+        const { error } = await supabase.from("transactions").update(patch).eq("id", last.id);
+        if (error) return { ok: false, erro: error.message };
+        const m = { ...last, ...patch };
+        return { ok: true, id: last.id, tipo: m.type, valor: Number(m.amount), categoria: m.category, descricao: m.description, data: m.occurred_on };
       },
     }),
     apagar_transacao: tool({

@@ -68,7 +68,16 @@ function Dashboard() {
         <>
           <Card className="border-accent bg-accent/40">
             <CardHeader><CardTitle className="flex items-center gap-2 text-lg"><Lightbulb className="size-5" aria-hidden /> Dicas do Grão</CardTitle></CardHeader>
-            <CardContent><ul className="list-disc space-y-1 pl-5 text-base">{tips.map((t) => <li key={t}>{t}</li>)}</ul></CardContent>
+            <CardContent>
+              {tips.length ? (
+                <ul className="list-disc space-y-1 pl-5 text-base">{tips.map((t) => <li key={t}>{t}</li>)}</ul>
+              ) : (
+                <div className="space-y-3 text-base">
+                  <p>Você ainda não registrou gastos neste mês. Que tal contar o primeiro para o Grão? Ex.: “Gastei R$ 20 no café”.</p>
+                  <Button asChild size="lg"><Link to="/chat">Registrar no chat</Link></Button>
+                </div>
+              )}
+            </CardContent>
           </Card>
 
           <div className="grid gap-4 md:grid-cols-2">

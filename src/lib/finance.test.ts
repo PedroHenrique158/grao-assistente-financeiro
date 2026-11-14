@@ -38,4 +38,13 @@ describe("finance rules", () => {
     );
     expect(tips).toContain("Você gastou 18% a mais com Lazer do que no mês passado.");
   });
+
+  it("top-category tip shows share of this month's expenses", () => {
+    const tips = buildInsights([tx({ amount: 75, category: "Alimentação" }), tx({ amount: 25, category: "Lazer" })], "2026-10");
+    expect(tips[0]).toBe("Seu maior gasto este mês está em Alimentação: R$\u00a075,00 (75% das despesas).");
+  });
+
+  it("no tips when the month has no expenses", () => {
+    expect(buildInsights([tx({ occurred_on: "2026-09-01" })], "2026-10")).toEqual([]);
+  });
 });

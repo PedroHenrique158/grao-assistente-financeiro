@@ -73,11 +73,10 @@ export function buildInsights(txs: Transaction[], key: string): string[] {
   const cur = monthSummary(txs, key);
   const prev = monthSummary(txs, previousMonthKey(key));
   const tips: string[] = [];
-  if (cur.categories[0]) {
-    tips.push(
-      `Seu maior gasto este mês está em ${cur.categories[0].category}: ${formatBRL(cur.categories[0].total)}.`,
-    );
-  }
+  const top = cur.categories[0];
+  if (!top || cur.expense <= 0) return tips;
+  const share = Math.round((top.total / cur.expense) * 100);
+  tips.push(`Seu maior gasto este mês está em ${top.category}: ${formatBRL(top.total)} (${share}% das despesas).`);
   for (const c of cur.categories) {
     const before = prev.categories.find((p) => p.category === c.category)?.total ?? 0;
     if (before > 0) {

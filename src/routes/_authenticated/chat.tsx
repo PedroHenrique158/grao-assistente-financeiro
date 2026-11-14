@@ -2,9 +2,13 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Pencil, Undo2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { Conversation, ConversationContent, ConversationEmptyState, ConversationScrollButton } from "@/components/ai-elements/conversation";
 import { Message, MessageContent, MessageResponse } from "@/components/ai-elements/message";
@@ -12,7 +16,7 @@ import { PromptInput, PromptInputFooter, PromptInputSubmit, PromptInputTextarea 
 import { Shimmer } from "@/components/ai-elements/shimmer";
 import { Suggestion, Suggestions } from "@/components/ai-elements/suggestion";
 import { AgentAvatar } from "@/components/Logo";
-import { formatBRL } from "@/lib/finance";
+import { CATEGORIES, formatBRL, formatDateBR } from "@/lib/finance";
 
 export const Route = createFileRoute("/_authenticated/chat")({
   head: () => ({ meta: [{ title: "Conversar — Grão" }] }),
@@ -38,7 +42,7 @@ function ChatPage() {
   return <ChatWindow initial={history.data ?? []} />;
 }
 
-const QUICK = ["Gastei R$ 45 no almoço hoje", "Recebi meu salário de R$ 3.500", "Quanto gastei este mês?", "Me dá uma dica para economizar"];
+const QUICK = ["Gastei R$ 45 no almoço hoje", "Recebi meu salário de R$ 3.500", "Quanto gastei este mês?", "Me dê uma dica de economia"];
 
 type ToolPart = { type: string; state?: string; input?: Record<string, unknown>; output?: Record<string, unknown> };
 
@@ -46,16 +50,8 @@ function ToolNote({ part }: { part: ToolPart }) {
   const name = part.type.replace("tool-", "");
   if (part.state !== "output-available") return <Shimmer className="text-sm">Anotando…</Shimmer>;
   if (part.output && part.output['ok'] === false) return <p className="text-sm text-destructive">Não consegui concluir essa ação.</p>;
-  if (name === "registrar_transacao" && part.input) {
-    const i = part.input as { tipo: string; valor: number; categoria: string; descricao: string };
-    return (
-      <div className="flex items-center gap-2 rounded-lg border bg-card px-3 py-2 text-sm">
-        <CheckCircle2 className="size-4 text-income" aria-hidden />
-        <span>
-          {i.tipo === "receita" ? "Receita" : "Despesa"} de <strong>{formatBRL(i.valor)}</strong> · {i.categoria} · {i.descricao}
-        </span>
-      </div>
-    );
+  if ((name === "registrar_transacao" || name === "corrigir_ultimo_lancamento") && part.output?.["id"]) {
+    return <TxCard data={part.output as unknown as TxOut} corrected={name === "corrigir_ultimo_lancamento"} />;
   }
   const labels: Record<string, string> = {
     corrigir_transacao: "Lançamento corrigido",
@@ -70,6 +66,69 @@ function ToolNote({ part }: { part: ToolPart }) {
       </div>
     );
   return null;
+}
+
+type TxOut = { id: string; tipo: string; valor: number; categoria: string; descricao: string; data?: string };
+
+function TxCard({ data, corrected }: { data: TxOut; corrected: boolean }) {
+  const qc = useQueryClient();
+  const [tx, setTx] = useState(data);
+  const [state, setState] = useState<"view" | "edit" | "undone">("view");
+  const [valor, setValor] = useState(String(data.valor));
+  const [cat, setCat] = useState(data.categoria);
+
+  async function undo() {
+    const { error } = await supabase.from("transactions").delete().eq("id", tx.id);
+    if (error) { toast.error("Não consegui desfazer."); return; }
+    setState("undone");
+    toast.success("Lançamento desfeito.");
+    qc.invalidateQueries({ queryKey: ["transactions"] });
+  }
+  async function save() {
+    const v = Number(valor.replace(",", "."));
+    if (!(v > 0)) { toast.error("Informe um valor maior que zero."); return; }
+    const { error } = await supabase.from("transactions").update({ amount: v, category: cat as (typeof CATEGORIES)[number] }).eq("id", tx.id);
+    if (error) { toast.error("Não consegui salvar."); return; }
+    setTx({ ...tx, valor: v, categoria: cat });
+    setState("view");
+    toast.success("Lançamento atualizado.");
+    qc.invalidateQueries({ queryKey: ["transactions"] });
+  }
+
+  if (state === "undone")
+    return <div role="status" className="rounded-lg border bg-muted px-3 py-2 text-sm text-muted-foreground">Lançamento desfeito.</div>;
+
+  return (
+    <div role="status" className="space-y-2 rounded-lg border bg-card p-3 text-sm">
+      <div className="flex items-start gap-2">
+        <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-income" aria-hidden />
+        <div>
+          <p className="font-semibold">{corrected ? "Lançamento corrigido" : tx.tipo === "receita" ? "Receita registrada" : "Despesa registrada"}</p>
+          <p><strong>{formatBRL(tx.valor)}</strong> · {tx.categoria} · {tx.descricao}{tx.data ? ` · ${formatDateBR(tx.data)}` : ""}</p>
+        </div>
+      </div>
+      {state === "edit" ? (
+        <div className="flex flex-wrap items-end gap-2">
+          <label className="flex flex-col gap-1">Valor (R$)
+            <Input inputMode="decimal" value={valor} onChange={(e) => setValor(e.target.value)} className="h-11 w-28" />
+          </label>
+          <label className="flex flex-col gap-1">Categoria
+            <Select value={cat} onValueChange={setCat}>
+              <SelectTrigger className="h-11 w-40"><SelectValue /></SelectTrigger>
+              <SelectContent>{CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+            </Select>
+          </label>
+          <Button size="lg" onClick={save}>Salvar</Button>
+          <Button size="lg" variant="ghost" onClick={() => setState("view")}>Cancelar</Button>
+        </div>
+      ) : (
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" className="min-h-11" onClick={undo}><Undo2 className="size-4" aria-hidden /> Desfazer</Button>
+          <Button variant="outline" className="min-h-11" onClick={() => setState("edit")}><Pencil className="size-4" aria-hidden /> Editar</Button>
+        </div>
+      )}
+    </div>
+  );
 }
 
 function ChatWindow({ initial }: { initial: UIMessage[] }) {
