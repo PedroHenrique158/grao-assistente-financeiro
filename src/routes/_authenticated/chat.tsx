@@ -16,6 +16,7 @@ import { PromptInput, PromptInputFooter, PromptInputSubmit, PromptInputTextarea 
 import { Shimmer } from "@/components/ai-elements/shimmer";
 import { Suggestion, Suggestions } from "@/components/ai-elements/suggestion";
 import { AgentAvatar } from "@/components/Logo";
+import { VoiceButton } from "@/components/VoiceButton";
 import { CATEGORIES, formatBRL, formatDateBR } from "@/lib/finance";
 
 export const Route = createFileRoute("/_authenticated/chat")({
@@ -161,6 +162,14 @@ function ChatWindow({ initial }: { initial: UIMessage[] }) {
     if (!busy) inputRef.current?.focus();
   }, [busy]);
 
+  const setInput = (text: string) => {
+    const ta = inputRef.current;
+    if (!ta) return;
+    const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")?.set;
+    setter?.call(ta, text);
+    ta.dispatchEvent(new Event("input", { bubbles: true }));
+  };
+
   const send = (text: string) => {
     if (!text.trim() || busy) return;
     sendMessage({ text });
@@ -220,7 +229,8 @@ function ChatWindow({ initial }: { initial: UIMessage[] }) {
             placeholder="Ex.: Gastei R$ 80 no mercado"
             className="text-base"
           />
-          <PromptInputFooter className="justify-end">
+          <PromptInputFooter className="justify-end gap-2">
+            <VoiceButton onText={setInput} disabled={busy} />
             <PromptInputSubmit status={status} onStop={stop} aria-label={busy ? "Parar" : "Enviar"} />
           </PromptInputFooter>
         </PromptInput>

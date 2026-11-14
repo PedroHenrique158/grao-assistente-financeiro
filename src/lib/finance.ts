@@ -93,3 +93,50 @@ export function buildInsights(txs: Transaction[], key: string): string[] {
   tips.push(`Se economizar R$ 10 por dia, você guarda ${formatBRL(300)} por mês.`);
   return tips.slice(0, 3);
 }
+
+export type TxFilter = {
+  inicio?: string | null; // YYYY-MM-DD inclusive
+  fim?: string | null; // YYYY-MM-DD inclusive
+  categorias?: Category[] | null;
+  tipo?: TxType | null;
+  valorMin?: number | null;
+  valorMax?: number | null;
+  termo?: string | null;
+};
+
+/** Filters transactions and aggregates totals for analytical questions. */
+export function analyzeTransactions(txs: Transaction[], f: TxFilter) {
+  const termo = f.termo?.trim().toLowerCase();
+  const list = txs.filter((t) =>
+    (!f.inicio || t.occurred_on >= f.inicio) &&
+    (!f.fim || t.occurred_on <= f.fim) &&
+    (!f.categorias?.length || f.categorias.includes(t.category)) &&
+    (!f.tipo || t.type === f.tipo) &&
+    (f.valorMin == null || t.amount >= f.valorMin) &&
+    (f.valorMax == null || t.amount <= f.valorMax) &&
+    (!termo || t.description.toLowerCase().includes(termo)),
+  );
+  const round = (n: number) => Math.round(n * 100) / 100;
+  const receitas = round(list.filter((t) => t.type === "receita").reduce((a, t) => a + t.amount, 0));
+  const despesas = round(list.filter((t) => t.type === "despesa").reduce((a, t) => a + t.amount, 0));
+  const porCategoria: Record<string, number> = {};
+  const porMes: Record<string, number> = {};
+  for (const t of list) {
+    if (t.type !== "despesa") continue;
+    porCategoria[t.category] = round((porCategoria[t.category] ?? 0) + t.amount);
+    porMes[t.occurred_on.slice(0, 7)] = round((porMes[t.occurred_on.slice(0, 7)] ?? 0) + t.amount);
+  }
+  const sorted = [...list].sort((a, b) => b.amount - a.amount);
+  return {
+    quantidade: list.length,
+    receitas,
+    despesas,
+    saldo: round(receitas - despesas),
+    mediaPorLancamento: list.length ? round((receitas + despesas) / list.length) : 0,
+    maior: sorted[0] ?? null,
+    menor: sorted[sorted.length - 1] ?? null,
+    porCategoria,
+    porMes,
+    lancamentos: [...list].sort((a, b) => b.occurred_on.localeCompare(a.occurred_on)).slice(0, 30),
+  };
+}

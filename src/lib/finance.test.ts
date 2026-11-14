@@ -48,3 +48,23 @@ describe("finance rules", () => {
     expect(buildInsights([tx({ occurred_on: "2026-09-01" })], "2026-10")).toEqual([]);
   });
 });
+
+import { analyzeTransactions } from "./finance";
+describe("analyzeTransactions", () => {
+  const txs = [
+    { id: "1", type: "despesa", amount: 50, category: "Saúde", description: "Farmácia", occurred_on: "2026-08-10" },
+    { id: "2", type: "despesa", amount: 200, category: "Saúde", description: "Consulta", occurred_on: "2026-10-05" },
+    { id: "3", type: "despesa", amount: 80, category: "Alimentação", description: "Mercado", occurred_on: "2026-10-06" },
+    { id: "4", type: "receita", amount: 3500, category: "Salário", description: "Salário", occurred_on: "2026-10-01" },
+  ] as const;
+  it("filtra por categoria e período", () => {
+    const r = analyzeTransactions([...txs], { categorias: ["Saúde"], inicio: "2026-09-01", fim: "2026-10-31" });
+    expect(r.quantidade).toBe(1);
+    expect(r.despesas).toBe(200);
+  });
+  it("aponta o maior gasto com faixa de valor", () => {
+    const r = analyzeTransactions([...txs], { tipo: "despesa", valorMin: 60 });
+    expect(r.maior?.id).toBe("2");
+    expect(r.despesas).toBe(280);
+  });
+});

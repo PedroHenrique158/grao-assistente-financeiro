@@ -4,7 +4,7 @@ import { convertToModelMessages, stepCountIs, streamText, tool, type UIMessage }
 import { z } from "zod/v4";
 
 import type { Database } from "@/integrations/supabase/types";
-import { CATEGORIES, formatBRL, monthSummary, previousMonthKey, todayBR, type Transaction } from "@/lib/finance";
+import { analyzeTransactions, CATEGORIES, formatBRL, monthSummary, previousMonthKey, todayBR, type Transaction } from "@/lib/finance";
 import {
   createLovableAiGatewayRunIdFetch,
   getLovableAiGatewayRunId,
@@ -44,7 +44,8 @@ Regras:
 - Depois de registrar, confirme em uma frase, ex.: "Registrei uma despesa de R$ 45,00 na categoria Alimentação." Ofereça corrigir se algo estiver errado.
 - Se logo após um registro o usuário pedir uma alteração (ex.: "corrige para R$ 50", "muda a categoria para Lazer", "na verdade foi ontem"), chame corrigir_ultimo_lancamento. NUNCA crie uma nova transação nesse caso.
 - Para corrigir ou apagar lançamentos mais antigos, use listar_transacoes para achar o lançamento e depois corrigir_transacao ou apagar_transacao.
-- Para perguntas sobre gastos, saldo ou dicas, use resumo_do_mes e dê no máximo 3 recomendações práticas e concretas com números.
+- Para perguntas analíticas (ex.: "quanto gastei com Saúde nos últimos 3 meses?", "qual meu maior gasto do mês passado?", "gastos acima de R$ 100"), use consultar_gastos. Converta períodos relativos em datas AAAA-MM-DD a partir de hoje (mês passado = primeiro ao último dia do mês anterior; últimos 3 meses = do dia 1 de dois meses atrás até hoje). Responda com os números retornados pela ferramenta, sem recalcular nem inventar, e diga o período usado.
+- Para resumo geral do mês ou dicas, use resumo_do_mes e dê no máximo 3 recomendações práticas e concretas com números.
 - Para metas use criar_meta, listar_metas e guardar_na_meta.
 - Se o valor não estiver claro, pergunte antes de registrar. Nunca invente valores.
 - Use valores no formato R$ 1.234,56. Respostas curtas.`;
@@ -194,6 +195,32 @@ export async function handleChat(request: Request): Promise<Response> {
         const key = todayBR().slice(0, 7);
         const prevKey = previousMonthKey(key);
         return { ok: true, mesAtual: monthSummary(txs, key), mesAnterior: monthSummary(txs, prevKey) };
+      },
+    }),
+    consultar_gastos: tool({
+      description: "Consulta analítica: filtra lançamentos por período, categorias, tipo, faixa de valor e termo, e devolve totais, maior/menor lançamento e somas por categoria e por mês.",
+      inputSchema: z.object({
+        inicio: z.string().nullable().describe("AAAA-MM-DD inicial (inclusive) ou null"),
+        fim: z.string().nullable().describe("AAAA-MM-DD final (inclusive) ou null"),
+        categorias: z.array(categoryEnum).nullable(),
+        tipo: z.enum(["receita", "despesa"]).nullable(),
+        valor_min: z.number().nullable(),
+        valor_max: z.number().nullable(),
+        termo: z.string().nullable().describe("Texto na descrição, ex.: uber, ifood"),
+      }),
+      execute: async (i) => {
+        const iso = (d: string | null) => (d && /^\d{4}-\d{2}-\d{2}$/.test(d) ? d : null);
+        let q = supabase.from("transactions").select("id, type, amount, category, description, occurred_on");
+        if (iso(i.inicio)) q = q.gte("occurred_on", iso(i.inicio)!);
+        if (iso(i.fim)) q = q.lte("occurred_on", iso(i.fim)!);
+        const { data, error } = await q.order("occurred_on", { ascending: false }).limit(2000);
+        if (error) return { ok: false, erro: error.message };
+        const txs = (data ?? []).map((t) => ({ ...t, amount: Number(t.amount) })) as Transaction[];
+        const r = analyzeTransactions(txs, {
+          inicio: iso(i.inicio), fim: iso(i.fim), categorias: i.categorias, tipo: i.tipo,
+          valorMin: i.valor_min, valorMax: i.valor_max, termo: i.termo,
+        });
+        return { ok: true, periodo: { inicio: iso(i.inicio), fim: iso(i.fim) }, ...r };
       },
     }),
     criar_meta: tool({
