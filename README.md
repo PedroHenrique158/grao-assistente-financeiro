@@ -1,292 +1,175 @@
-# Pocket Pal Finance Journal
+# 🌾 Grão: Assistente Financeiro Conversacional orquestrado por IA
 
-Crie um App de Finanças Pessoais com base no seguinte PRD (Product Requirements Document)
+> O Grão não é apenas uma interface; é um assistente financeiro inteligente que elimina a fricção das planilhas através de orquestração de IA, processamento de linguagem natural (NLP) e Design Universal.
 
-# PRD - Assistente Financeiro Conversacional
-## Visão do Produto
-Criar um aplicativo de finanças pessoais que permita ao usuário registrar, consultar e acompanhar sua vida financeira por meio de conversas em linguagem natural, eliminando a complexidade de planilhas e aplicativos tradicionais.
-O produto deve atuar como um assistente financeiro pessoal, ajudando usuários iniciantes a entenderem melhor seus hábitos financeiros, economizarem dinheiro e alcançarem metas financeiras.
+<!-- Badges de Impacto -->
+[![Engenharia de Produto](https://img.shields.io/badge/Engenharia%20de%20Produto-MVP%20Validado-blue)](#)
+[![IA & NLP](https://img.shields.io/badge/IA%20&%20NLP-Function%20Calling-orange)](#)
+[![Vibe Coding](https://img.shields.io/badge/DIO-Vibe%20Coding-success)](#)
+
 ---
-# Problema
+
+## 📋 Índice
+
+- [Visão do Produto e Impacto](#-visão-do-produto-e-impacto)
+- [Arquitetura e Capacidades de IA](#-arquitetura-e-capacidades-de-ia)
+- [Demonstração (E2E)](#-demonstração-e2e)
+- [O "Código-Fonte" (PRD e Prompting)](#-o-código-fonte-prd-e-prompting)
+- [Tecnologias Utilizadas](#-tecnologias-utilizadas)
+- [Instalação e Execução](#-instalação-e-execução)
+- [Próximos Passos (Roadmap)](#-próximos-passos-roadmap)
+
+---
+
+## 💡 Visão do Produto e Impacto
+
+**O Problema:** A principal causa de *churn* (abandono) em apps de finanças é a carga cognitiva. Usuários odeiam preencher formulários com 5 a 10 campos para registrar um simples café.
+
+**A Solução:** Tornar a gestão financeira tão simples quanto mandar uma mensagem de áudio ou texto. Construído com a premissa de *Design Universal*, o Grão permite que qualquer pessoa registre, audite e planeje sua vida financeira conversando, transformando linguagem natural em dados estruturados em milissegundos.
+
+---
+
+## 🧠 Arquitetura e Capacidades de IA
+
+Para demonstrar domínio em Engenharia de IA aplicada a Produtos, o motor do Grão foi estruturado sobre três pilares técnicos:
+
+1. **Orquestração NLP e Tool Calling:** O LLM atua como raciocínio central. Ele faz o *parsing* da entrada não-estruturada ("Gastei 120 de luz") e aciona ferramentas internas extraindo entidades rigorosas: `{"tipo": "despesa", "valor": 120.0, "categoria": "moradia"}`.
+2. **Contexto Analítico (Zero Alucinação):** Implementação de ferramentas de consulta (`consultar_gastos`) que permitem à IA consultar diretamente o banco filtrando por período e categoria, fornecendo respostas exatas.
+3. **Acessibilidade Nativa:** Integração com `Web Speech API` para transcrição de voz em tempo real no client-side (*hands-free*).
+
+### 📐 Fluxo Arquitetural
+
+```mermaid
+flowchart LR
+    U[Usuário Mobile/Web] -->|Texto ou Voz pt-BR| UI[Interface Grão]
+    UI --> LLM{Motor IA / NLP}
+    LLM -->|Intenção: Registrar| T1[Tool: registrar_transacao]
+    LLM -->|Intenção: Análise| T2[Tool: consultar_gastos]
+    T1 & T2 --> DB[(Base de Dados)]
+    DB --> UI
+
+```
+
+---
+
+## 💻 Demonstração (E2E)
+<img width="1351" height="633" alt="Img" src="https://github.com/user-attachments/assets/6adeea6c-3390-43a0-93ea-2b668de04821" />
+
+---
+
+## 📄 O "Código-Fonte" (PRD e Prompting)
+
+O desenvolvimento deste projeto foi guiado pelo seguinte **Product Requirements Document (PRD)**, utilizado como contexto base para a geração da aplicação (Vibe Coding):
+
+### 1. Visão Geral
+
+Criar um aplicativo de finanças pessoais que permita ao usuário registrar, consultar e acompanhar sua vida financeira por meio de conversas em linguagem natural, eliminando a complexidade de planilhas e aplicativos tradicionais. O produto deve atuar como um assistente financeiro pessoal, ajudando usuários iniciantes a entenderem melhor seus hábitos financeiros, economizarem dinheiro e alcançarem metas financeiras.
+
+### 2. O Problema
+
 Muitas pessoas desistem de controlar suas finanças porque:
-- Precisam preencher formulários manualmente.
-- Não sabem categorizar despesas corretamente.
-- Consideram relatórios financeiros difíceis de entender.
-- Recebem pouca orientação personalizada.
-- Perdem a motivação após alguns dias de uso.
-Como consequência, perdem visibilidade sobre seus gastos e têm dificuldade em atingir objetivos financeiros.
----
-# Objetivo do Produto
-Tornar a gestão financeira simples, intuitiva e acessível por meio de uma experiência conversacional baseada em IA.
-O usuário deve conseguir registrar movimentações financeiras da mesma forma que conversa com uma pessoa.
-Exemplos:
-Usuário:
-"Gastei R$ 45 no almoço hoje."
-Sistema:
-"Registrei uma despesa de R$ 45 na categoria Alimentação."
-Usuário:
-"Recebi meu salário de R$ 3.500."
-Sistema:
-"Receita registrada na categoria Salário."
----
-# Público-Alvo
-## Público Primário
-Pessoas iniciantes em educação financeira e organização pessoal.
-## Público Secundário
-- Usuários que abandonaram aplicativos financeiros tradicionais.
-- Pessoas que não gostam de planilhas.
-- Usuários com pouco conhecimento financeiro.
-- Pessoas que desejam criar o hábito de acompanhar gastos.
----
-# Proposta de Valor
-O aplicativo elimina a necessidade de preenchimentos complexos e oferece:
-- Registro de gastos por conversa.
-- Categorização automática.
-- Acompanhamento de metas financeiras.
-- Recomendações personalizadas de economia.
-- Relatórios simples e fáceis de entender.
-- Orientação contínua através de um agente financeiro virtual.
----
-# Funcionalidades do MVP
-## 1. Chat Financeiro
-Permitir registro de receitas e despesas por linguagem natural.
-Exemplos:
-- "Gastei R$ 80 no mercado."
-- "Paguei R$ 120 de internet."
-- "Recebi R$ 2.500 de salário."
-### Critérios de Sucesso
-O sistema deve identificar:
-- Valor
-- Tipo da transação
-- Categoria
-- Data
----
-## 2. Categorização Automática
-Classificar transações automaticamente.
-Categorias iniciais:
-- Alimentação
-- Transporte
-- Moradia
-- Saúde
-- Educação
-- Lazer
-- Salário
-- Outros
-### Critério de Sucesso
-Mais de 80% das transações devem ser classificadas corretamente sem intervenção do usuário.
----
-## 3. Metas Financeiras
-Permitir a criação de objetivos financeiros.
-Exemplos:
-- Reserva de emergência
-- Viagem
-- Compra de notebook
-- Compra de veículo
-### Recursos
-- Nome da meta
-- Valor desejado
-- Prazo
-- Progresso percentual
----
-## 4. Agente Financeiro
-Assistente virtual que analisa os hábitos do usuário e gera recomendações.
-Exemplos:
-- "Você gastou 18% a mais com delivery este mês."
-- "Se economizar R$ 10 por dia, poderá guardar R$ 300 por mês."
-- "Seu maior gasto atual está na categoria Alimentação."
----
-## 5. Dashboard Simplificado
-Apresentar informações financeiras de forma clara.
-Indicadores:
-- Receitas do mês
-- Despesas do mês
-- Saldo atual
-- Categorias com maior gasto
-- Evolução dos gastos
-- Progresso das metas
----
-# Fluxo Principal do Usuário
-## Primeiro Acesso
-1. Criar conta.
-2. Informar objetivo financeiro principal.
-3. Receber introdução rápida ao funcionamento do aplicativo.
-## Uso Recorrente
-1. Registrar movimentações no chat.
-2. Receber confirmação da operação.
-3. Consultar dashboard.
-4. Receber insights do agente financeiro.
-5. Acompanhar metas.
----
-# Design Universal e Acessibilidade
-## Objetivo
-O produto deverá seguir princípios de Design Universal para garantir uma boa experiência para o maior número possível de pessoas, independentemente de:
-- Idade
-- Conhecimento financeiro
-- Experiência digital
-- Limitações visuais
-- Limitações motoras
-- Limitações cognitivas
----
-## Requisitos de Usabilidade
-### Linguagem
-- Utilizar linguagem simples e amigável.
-- Evitar termos técnicos desnecessários.
-- Explicar conceitos financeiros quando necessário.
-### Navegação
-- Fluxos intuitivos.
-- Poucas etapas para executar ações importantes.
-- Priorizar simplicidade.
-### Leitura
-- Alto contraste entre texto e fundo.
-- Fontes legíveis.
-- Espaçamento adequado.
-- Layout responsivo.
-### Acessibilidade
-- Compatibilidade com leitores de tela.
-- Ícones acompanhados por texto.
-- Feedback visual e textual.
-- Botões com área de toque adequada.
-### Inclusão Cognitiva
-- Evitar excesso de informações.
-- Mostrar apenas informações relevantes.
-- Utilizar visualizações simples.
-- Guiar o usuário em tarefas importantes.
-### Flexibilidade
-O usuário deve conseguir:
-- Registrar gastos pelo chat.
-- Corrigir lançamentos facilmente.
-- Utilizar a aplicação sem conhecimento prévio de finanças.
----
-# Requisitos Não Funcionais
-## Performance
-- Respostas do chat em até 3 segundos.
-## Segurança
-- Dados criptografados.
-- Autenticação por e-mail ou Google.
-- Conformidade com LGPD.
-## Responsividade
-- Mobile-first.
-- Funcionamento adequado em smartphones, tablets e desktop.
----
-# Métricas de Sucesso
-## Adoção
-- Número de usuários ativos semanalmente.
-- Número de usuários ativos mensalmente.
-## Engajamento
-- Retenção após 7 dias.
-- Retenção após 30 dias.
-- Quantidade média de registros por usuário.
-## Valor Gerado
-- Percentual de usuários que criaram metas.
-- Percentual de usuários que registraram mais de 10 transações.
-- Percentual de usuários que retornam ao aplicativo semanalmente.
----
-# Plano de Validação Inicial
-## Hipótese Principal
-Usuários preferem registrar movimentações financeiras por conversa em vez de utilizar formulários tradicionais.
-## Experimento
-Disponibilizar o MVP para um grupo inicial de 10 a 20 usuários.
-## Objetivos da Validação
-- Verificar facilidade de uso.
-- Medir precisão da categorização.
-- Avaliar utilidade dos insights financeiros.
-- Medir frequência de uso.
-## Perguntas para Feedback
-1. Foi fácil registrar gastos?
-2. As categorias sugeridas fizeram sentido?
-3. As recomendações ajudaram você?
-4. Você utilizaria o aplicativo semanalmente?
-5. O que sentiu falta?
----
-# Principais Telas
-## Tela de Login
-Objetivo:
-Permitir autenticação do usuário.
-Elementos:
-- Login com Google
-- Login por e-mail
-- Recuperação de senha
----
-## Tela de Chat
-Objetivo:
-Principal ponto de interação com o usuário.
-Elementos:
-- Histórico de conversas
-- Campo de mensagem
-- Sugestões rápidas
----
-## Dashboard Financeiro
-Objetivo:
-Visualizar situação financeira atual.
-Elementos:
-- Receita total
-- Despesa total
-- Saldo
-- Gráficos simplificados
-- Principais categorias
----
-## Tela de Metas
-Objetivo:
-Gerenciar objetivos financeiros.
-Elementos:
-- Lista de metas
-- Progresso
-- Prazo
-- Valor acumulado
----
-## Perfil e Configurações
-Objetivo:
-Personalização e controle da conta.
-Elementos:
-- Dados do usuário
-- Preferências
-- Segurança
-- Privacidade
----
-# Recursos Técnicos Necessários
-## Frontend
-- Interface responsiva
-- Chat conversacional
-- Dashboard financeiro
-- Gestão de metas
-## Backend
-- Banco de dados
-- Sistema de autenticação
-- API de IA
-- Processamento de linguagem natural
-- Motor de categorização
-## Inteligência Artificial
-- Extração de informações financeiras
-- Classificação automática
-- Geração de insights
-- Assistente conversacional
----
-# Definição de Sucesso do MVP
-O MVP será considerado validado quando:
-- Pelo menos 70% dos usuários conseguirem registrar movimentações sem ajuda.
-- Pelo menos 50% retornarem após 7 dias.
-- A categorização automática atingir mais de 80% de acerto.
-- Os usuários considerarem o chat mais simples que planilhas ou aplicativos tradicionais.
 
-Pode continuar no modo gratuito.
+* Precisam preencher formulários manualmente.
+* Não sabem categorizar despesas corretamente.
+* Consideram relatórios financeiros difíceis de entender.
+* Recebem pouca orientação personalizada.
+* Perdem a motivação após alguns dias de uso.
 
-This project was built with [Lovable](https://lovable.dev).
+*Consequência:* Perdem visibilidade sobre seus gastos e têm dificuldade em atingir objetivos financeiros.
 
-## Build with Lovable
+### 3. Público-Alvo
 
-Continue developing this project in the [Lovable editor](https://lovable.dev/projects/21ceef26-9a12-41be-9417-18010fac1f34).
+* **Público Primário:** Pessoas iniciantes em educação financeira e organização pessoal.
+* **Público Secundário:** Usuários que abandonaram apps tradicionais, pessoas que não gostam de planilhas, usuários com pouco conhecimento financeiro e pessoas que desejam criar o hábito de acompanhar gastos.
 
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: every change made in Lovable is committed straight to this repository.
-- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
+### 4. Proposta de Valor e Objetivo
 
-## Development
+Tornar a gestão financeira simples, intuitiva e acessível. O usuário deve conseguir registrar movimentações da mesma forma que conversa com uma pessoa. O aplicativo oferece:
 
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
+* Registro de gastos por conversa com categorização automática.
+* Acompanhamento de metas financeiras.
+* Recomendações personalizadas e relatórios simples.
+* Orientação contínua através de um agente financeiro virtual.
 
-```sh
-git clone <this-repository-url>
-cd <repository-name>
-npm i
+### 5. Funcionalidades do MVP
+
+* **Chat Financeiro:** Permite registrar receitas e despesas. O sistema identifica *Valor, Tipo da transação, Categoria e Data*.
+* *Ex:* Usuário: "Gastei R$ 45 no almoço hoje." -> Sistema: "Registrei uma despesa de R$ 45 na categoria Alimentação."
+
+
+* **Categorização Automática:** Classificação (Alimentação, Transporte, Moradia, Saúde, Educação, Lazer, Salário, Outros). *Meta: >80% de precisão automática.*
+* **Metas Financeiras:** Criação de objetivos (Reserva de emergência, Viagem) com Nome, Valor, Prazo e Progresso.
+* **Agente Financeiro:** Análises e recomendações de hábitos (Ex: "Você gastou 18% a mais com delivery este mês.").
+* **Dashboard Simplificado:** Indicadores de receitas, despesas, saldo atual, maiores gastos e evolução.
+
+### 6. Design Universal e Acessibilidade
+
+Garantir boa experiência independentemente de idade, limitações visuais/motoras ou cognitivas.
+
+* **Usabilidade:** Linguagem simples, alto contraste, ícones textuais, botões amplos.
+* **Inclusão Cognitiva:** Evitar excesso de informações; guiar o usuário em tarefas importantes.
+
+### 7. Requisitos Não Funcionais
+
+* **Performance:** Respostas do chat em até 3 segundos.
+* **Segurança:** Dados criptografados e conformidade com LGPD.
+* **Responsividade:** Abordagem Mobile-first.
+
+### 8. Métricas e Validação do MVP
+
+* **Validação Inicial:** Teste com 10 a 20 usuários (Hipótese: Usuários preferem chat a formulários).
+* **Critérios de Sucesso:**
+* Pelo menos 70% dos usuários conseguirem registrar sem ajuda.
+* Pelo menos 50% de retenção no D7 (após 7 dias).
+* Categorização automática atingir >80% de acerto.
+* Maioria considerar o chat mais simples que planilhas.
+
+
+
+---
+
+## 🛠 Tecnologias Utilizadas
+
+* **Frontend:** React, Tailwind CSS, Shadcn UI
+* **Backend & Banco de Dados:** Supabase
+* **IA e NLP:** Integração com LLMs via API (Function Calling)
+* **Geração de Código:** Lovable (Vibe Coding)
+
+---
+
+## 🚀 Instalação e Execução
+
+Para rodar este projeto localmente:
+
+1. Clone o repositório:
+
+```bash
+git clone [https://github.com/PedroHenrique158/pocket-pal-finance-journal.git](https://github.com/PedroHenrique158/pocket-pal-finance-journal.git)
+
+```
+
+2. Instale as dependências:
+
+```bash
+npm install
+
+```
+
+3. Inicie o servidor de desenvolvimento:
+
+```bash
 npm run dev
+
+```
+
+---
+
+## 🗺 Próximos Passos (Roadmap)
+
+* [ ] Implementar gráficos interativos com evolução mensal no Dashboard.
+* [ ] Adicionar suporte a múltiplos idiomas e moedas.
+* [ ] Conexão direta com APIs bancárias (Open Finance) para leitura de saldos.
+
+```
+
 ```
