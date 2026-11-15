@@ -144,7 +144,7 @@ Para rodar este projeto localmente:
 1. Clone o repositório:
 
 ```bash
-git clone [https://github.com/PedroHenrique158/pocket-pal-finance-journal.git](https://github.com/PedroHenrique158/pocket-pal-finance-journal.git)
+git clone [https://github.com/PedroHenrique158/grao-assistente-financeiro.git](https://github.com/PedroHenrique158/grao-assistente-financeiro.git)
 
 ```
 
