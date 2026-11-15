@@ -17,6 +17,7 @@
 - [O "Código-Fonte" (PRD e Prompting)](#-o-código-fonte-prd-e-prompting)
 - [Tecnologias Utilizadas](#-tecnologias-utilizadas)
 - [Instalação e Execução](#-instalação-e-execução)
+- [Segurança e Variáveis de Ambiente](#-segurança-e-variáveis-de-ambiente)
 - [Próximos Passos (Roadmap)](#-próximos-passos-roadmap)
 
 ---
@@ -161,6 +162,22 @@ npm install
 npm run dev
 
 ```
+
+---
+
+## 🔒 Segurança e Variáveis de Ambiente
+
+> [!IMPORTANT]
+> O arquivo `.env` está commitado no repositório por exigência da arquitetura de build atual. A plataforma só publica os arquivos versionados, então ele precisa permanecer no Git para que o app funcione no ar.
+
+* **Quem clonar o projeto** pode usar o `.env.example` como base: ele traz apenas os nomes das variáveis e valores públicos genéricos.
+* O `.env` versionado contém **exclusivamente dados públicos** (identificador do projeto, chave publicável e endereço do backend). Não há senha nem credencial privada nele.
+
+### ⚠️ Regra de Ouro
+
+**É estritamente proibido adicionar chaves privadas** (como `OPENAI_API_KEY` ou credenciais de banco) **no arquivo `.env`.**
+
+Qualquer segredo real deve ser injetado **apenas via painel (Secrets) da plataforma de hospedagem**. Segredos no painel não entram no repositório, não ficam expostos para quem clona o projeto e podem ser rotacionados sem alterar o código.
 
 ---
 
