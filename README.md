@@ -186,7 +186,3 @@ Qualquer segredo real deve ser injetado **apenas via painel (Secrets) da platafo
 * [ ] Implementar gráficos interativos com evolução mensal no Dashboard.
 * [ ] Adicionar suporte a múltiplos idiomas e moedas.
 * [ ] Conexão direta com APIs bancárias (Open Finance) para leitura de saldos.
-
-```
-
-```
