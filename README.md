@@ -1,66 +1,61 @@
-# 🌾 Grão: Assistente Financeiro Conversacional orquestrado por IA
+# 🌾 Grão
 
-> O Grão não é apenas uma interface; é um assistente financeiro inteligente que elimina a fricção das planilhas através de orquestração de IA, processamento de linguagem natural (NLP) e Design Universal.
+O Grão é um protótipo para registrar e consultar despesas por conversa. A ideia é trocar o formulário por uma frase, como “Gastei R$ 45 no almoço”. Escrevi os requisitos do produto e usei o Lovable para prototipar o fluxo com TypeScript e Supabase.
 
-<!-- Badges de Impacto -->
-[![Engenharia de Produto](https://img.shields.io/badge/Engenharia%20de%20Produto-MVP%20Validado-blue)](#)
-[![IA & NLP](https://img.shields.io/badge/IA%20&%20NLP-Function%20Calling-orange)](#)
-[![Vibe Coding](https://img.shields.io/badge/DIO-Vibe%20Coding-success)](#)
+## Veja a ideia em prática
 
----
+Depois do login, a pessoa pode digitar uma despesa ou ditá-la em um navegador compatível. O chat interpreta a mensagem e chama uma ferramenta de registro. Em seguida, perguntas como “Quanto gastei com alimentação este mês?” usam os lançamentos guardados na conta para compor a resposta.
 
-## 📋 Índice
+<img width="1351" height="633" alt="Captura da interface do assistente financeiro Grão" src="https://github.com/user-attachments/assets/6adeea6c-3390-43a0-93ea-2b668de04821" />
 
-- [Visão do Produto e Impacto](#-visão-do-produto-e-impacto)
-- [Arquitetura e Capacidades de IA](#-arquitetura-e-capacidades-de-ia)
-- [Demonstração (E2E)](#-demonstração-e2e)
-- [O "Código-Fonte" (PRD e Prompting)](#-o-código-fonte-prd-e-prompting)
-- [Tecnologias Utilizadas](#-tecnologias-utilizadas)
-- [Instalação e Execução](#-instalação-e-execução)
-- [Segurança e Variáveis de Ambiente](#-segurança-e-variáveis-de-ambiente)
-- [Próximos Passos (Roadmap)](#-próximos-passos-roadmap)
+A imagem mostra a interface do protótipo. Não é um relatório de teste de ponta a ponta.
 
----
-
-## 💡 Visão do Produto e Impacto
-
-**O Problema:** A principal causa de *churn* (abandono) em apps de finanças é a carga cognitiva. Usuários odeiam preencher formulários com 5 a 10 campos para registrar um simples café.
-
-**A Solução:** Tornar a gestão financeira tão simples quanto mandar uma mensagem de áudio ou texto. Construído com a premissa de *Design Universal*, o Grão permite que qualquer pessoa registre, audite e planeje sua vida financeira conversando, transformando linguagem natural em dados estruturados em milissegundos.
-
----
-
-## 🧠 Arquitetura e Capacidades de IA
-
-Para demonstrar domínio em Engenharia de IA aplicada a Produtos, o motor do Grão foi estruturado sobre três pilares técnicos:
-
-1. **Orquestração NLP e Tool Calling:** O LLM atua como raciocínio central. Ele faz o *parsing* da entrada não-estruturada ("Gastei 120 de luz") e aciona ferramentas internas extraindo entidades rigorosas: `{"tipo": "despesa", "valor": 120.0, "categoria": "moradia"}`.
-2. **Contexto Analítico (Zero Alucinação):** Implementação de ferramentas de consulta (`consultar_gastos`) que permitem à IA consultar diretamente o banco filtrando por período e categoria, fornecendo respostas exatas.
-3. **Acessibilidade Nativa:** Integração com `Web Speech API` para transcrição de voz em tempo real no client-side (*hands-free*).
-
-### 📐 Fluxo Arquitetural
+## Como funciona
 
 ```mermaid
 flowchart LR
-    U[Usuário Mobile/Web] -->|Texto ou Voz pt-BR| UI[Interface Grão]
-    UI --> LLM{Motor IA / NLP}
-    LLM -->|Intenção: Registrar| T1[Tool: registrar_transacao]
-    LLM -->|Intenção: Análise| T2[Tool: consultar_gastos]
-    T1 & T2 --> DB[(Base de Dados)]
-    DB --> UI
-
+    A["Mensagem: texto ou voz em pt-BR"] --> B["Chat autenticado"]
+    B --> C{"Ferramenta escolhida pelo modelo"}
+    C --> D["Registrar transação"]
+    C --> E["Consultar gastos"]
+    D --> F["Supabase"]
+    E --> F
+    F --> G["Resultado para o chat"]
 ```
 
----
+- **Interface:** React, TypeScript e TanStack Start. A entrada por voz usa reconhecimento de fala do navegador; o texto continua disponível sem microfone.
+- **Chat:** a aplicação valida a sessão, chama o gateway de IA do Lovable no servidor e usa ferramentas como `registrar_transacao` e `consultar_gastos`.
+- **Dados:** Supabase Auth e PostgreSQL. A migração versionada define políticas de acesso por usuário (RLS). As consultas usam dados registrados, mas a interpretação da pergunta e a redação da resposta ainda podem falhar.
 
-## 💻 Demonstração (E2E)
-<img width="1351" height="633" alt="Img" src="https://github.com/user-attachments/assets/6adeea6c-3390-43a0-93ea-2b668de04821" />
+## Como rodar
 
----
+Você vai precisar de [Bun](https://bun.sh/), de um projeto Supabase de desenvolvimento e, para usar o chat, de acesso ao gateway de IA do Lovable.
 
-## 📄 O "Código-Fonte" (PRD e Prompting)
+```bash
+git clone https://github.com/PedroHenrique158/grao-assistente-financeiro.git
+cd grao-assistente-financeiro
+bun install --frozen-lockfile
+```
 
-O desenvolvimento deste projeto foi guiado pelo seguinte **Product Requirements Document (PRD)**, utilizado como contexto base para a geração da aplicação (Vibe Coding):
+1. Use `.env.example` como referência para configurar a URL e a chave **publicável** do seu próprio projeto Supabase nas variáveis do servidor (`SUPABASE_*`) e do cliente (`VITE_SUPABASE_*`). Não use a instância publicada como banco de desenvolvimento.
+2. Aplique em seu projeto de desenvolvimento a migração em `drizzle/migrations/0000_migration.sql` e configure o Supabase Auth.
+3. Para o chat, disponibilize `LOVABLE_API_KEY` apenas ao processo do servidor. Não use prefixo `VITE_` para essa credencial e não a envie ao Git.
+4. Rode `bun run dev` e abra o endereço exibido pelo terminal.
+
+## Testes
+
+```bash
+bun run test
+```
+
+O repositório inclui testes de cálculo de saldo, progresso de metas, filtros de despesas e da rota inicial. Esses testes não substituem a validação do fluxo completo com Supabase e o gateway de IA.
+
+## Requisitos do produto (PRD)
+
+O documento abaixo orientou a prototipagem. Os percentuais, tempos de resposta, requisitos de segurança e critérios de adoção são **metas de projeto**, não resultados medidos, certificações ou comprovação de conformidade.
+
+<details>
+<summary>Ler o PRD original</summary>
 
 ### 1. Visão Geral
 
@@ -125,64 +120,10 @@ Garantir boa experiência independentemente de idade, limitações visuais/motor
 * Categorização automática atingir >80% de acerto.
 * Maioria considerar o chat mais simples que planilhas.
 
+</details>
 
+## Próximos passos
 
----
-
-## 🛠 Tecnologias Utilizadas
-
-* **Frontend:** React, Tailwind CSS, Shadcn UI
-* **Backend & Banco de Dados:** Supabase
-* **IA e NLP:** Integração com LLMs via API (Function Calling)
-* **Geração de Código:** Lovable (Vibe Coding)
-
----
-
-## 🚀 Instalação e Execução
-
-Para rodar este projeto localmente:
-
-1. Clone o repositório:
-
-```bash
-git clone [https://github.com/PedroHenrique158/grao-assistente-financeiro.git](https://github.com/PedroHenrique158/grao-assistente-financeiro.git)
-
-```
-
-2. Instale as dependências:
-
-```bash
-npm install
-
-```
-
-3. Inicie o servidor de desenvolvimento:
-
-```bash
-npm run dev
-
-```
-
----
-
-## 🔒 Segurança e Variáveis de Ambiente
-
-> [!IMPORTANT]
-> O arquivo `.env` está commitado no repositório por exigência da arquitetura de build atual. A plataforma só publica os arquivos versionados, então ele precisa permanecer no Git para que o app funcione no ar.
-
-* **Quem clonar o projeto** pode usar o `.env.example` como base: ele traz apenas os nomes das variáveis e valores públicos genéricos.
-* O `.env` versionado contém **exclusivamente dados públicos** (identificador do projeto, chave publicável e endereço do backend). Não há senha nem credencial privada nele.
-
-### ⚠️ Regra de Ouro
-
-**É estritamente proibido adicionar chaves privadas** (como `OPENAI_API_KEY` ou credenciais de banco) **no arquivo `.env`.**
-
-Qualquer segredo real deve ser injetado **apenas via painel (Secrets) da plataforma de hospedagem**. Segredos no painel não entram no repositório, não ficam expostos para quem clona o projeto e podem ser rotacionados sem alterar o código.
-
----
-
-## 🗺 Próximos Passos (Roadmap)
-
-* [ ] Implementar gráficos interativos com evolução mensal no Dashboard.
-* [ ] Adicionar suporte a múltiplos idiomas e moedas.
-* [ ] Conexão direta com APIs bancárias (Open Finance) para leitura de saldos.
+- Mostrar o valor e a categoria para confirmação antes de salvar um lançamento interpretado pelo chat.
+- Evoluir os gráficos de acompanhamento mensal.
+- Avaliar suporte a múltiplos idiomas e moedas.
